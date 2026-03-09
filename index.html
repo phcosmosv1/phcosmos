@@ -2,8 +2,8 @@
 <html lang="th">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>pH Cosmos : จักรวาลกรด-เบส | Bloom Scaffolded Journey</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>pH Cosmos v19: จักรวาลกรด-เบส | Bloom Scaffolded Journey</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;600;700;900&display=swap" rel="stylesheet" />
@@ -26,6 +26,7 @@
     *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
     html{scroll-behavior:smooth}
     body{font-family:var(--font);overflow-x:hidden}
+    input,textarea,select{-webkit-user-select:text!important;user-select:text!important;-webkit-tap-highlight-color:rgba(160,100,255,.2);}
 
     /* ── Global text overflow safeguards ─────────────────────────
        Prevents Thai long-word strings, emojis, and injected content
@@ -2760,6 +2761,8 @@
       display:flex; align-items:center; justify-content:center;
       padding:1.2rem; animation:fadeInBg .4s ease;
     }
+    .reflect-overlay[style*="display: none"],
+    .reflect-overlay[style*="display:none"] { pointer-events:none !important; }
     @keyframes fadeInBg{from{opacity:0}to{opacity:1}}
     .reflect-card {
       background:linear-gradient(145deg,rgba(28,14,58,.97),rgba(10,18,48,.98));
@@ -2783,6 +2786,7 @@
       padding:.7rem 1rem; background:rgba(255,255,255,.07);
       border:1.5px solid rgba(255,255,255,.15); border-radius:14px;
       color:#fff; outline:none; transition:border-color .2s,background .2s; margin-bottom:1rem;
+          -webkit-user-select:text; user-select:text;
     }
     .reflect-textarea::placeholder { color:rgba(255,255,255,.28); }
     .reflect-textarea:focus { border-color:rgba(160,100,255,.65); background:rgba(255,255,255,.1); }
@@ -3703,6 +3707,8 @@
       background:rgba(255,255,255,.08); border:1.5px solid rgba(255,255,255,.18);
       border-radius:14px; color:#fff; outline:none;
       transition:border-color .2s,background .2s; box-sizing:border-box;
+          -webkit-user-select:text; user-select:text;
+      -webkit-tap-highlight-color:rgba(160,100,255,.2);
     }
     .wm-name-input::placeholder { color:rgba(255,255,255,.28); font-weight:400; }
     .wm-name-input:focus { border-color:rgba(160,100,255,.7); background:rgba(160,100,255,.1); }
@@ -7403,7 +7409,8 @@ document.addEventListener('visibilitychange', () => {
 
       nebulaBlobs.push({ cx, cy, r, driftX: rand(-0.06, 0.06), driftY: rand(-0.04, 0.04) });
 
-      /* Draw once onto off-screen canvas */
+      /* Draw once onto off-screen canvas — skip if any value is non-finite */
+      if (!isFinite(cx) || !isFinite(cy) || !isFinite(r) || r <= 0) continue;
       const grad = nebulaCtx.createRadialGradient(cx, cy, 0, cx, cy, r);
       grad.addColorStop(0,   `hsla(${h},${s}%,${l}%,${alpha})`);
       grad.addColorStop(0.5, `hsla(${h},${s}%,${l}%,${alpha * 0.4})`);
@@ -7444,15 +7451,20 @@ document.addEventListener('visibilitychange', () => {
 
     /* ── 1. Clear ── */
     ctx.clearRect(0, 0, W, H);
+    /* Sanitize offX/offY — if NaN crept in (e.g. W=0 at init), reset to 0 */
+    if (!isFinite(offX)) offX = 0;
+    if (!isFinite(offY)) offY = 0;
 
     /* ── 2. Blit nebula off-screen layer ── */
     if (nebulaOff.width > 0 && nebulaOff.height > 0) ctx.drawImage(nebulaOff, 0, 0);
 
     /* ── 3. Smooth mouse parallax offset (lerp toward target) ── */
-    const targetX = (mouseX / W - 0.5) * 36;   /* −18 … +18 px range */
-    const targetY = (mouseY / H - 0.5) * 24;   /* −12 … +12 px range */
-    offX += (targetX - offX) * 0.04;           /* 4% lerp per frame ≈ ~150ms lag */
-    offY += (targetY - offY) * 0.04;
+    if (W > 0 && H > 0) {
+      const targetX = (mouseX / W - 0.5) * 36;
+      const targetY = (mouseY / H - 0.5) * 24;
+      offX += (targetX - offX) * 0.04;
+      offY += (targetY - offY) * 0.04;
+    }
 
     /* ── 4. Draw stars ── */
     for (let i = 0; i < stars.length; i++) {
@@ -7476,7 +7488,7 @@ document.addEventListener('visibilitychange', () => {
         : `rgba(255,255,255,${a})`;
 
       /* Draw — for larger stars add a soft glow halo first */
-      if (s.r > 1.6) {
+      if (s.r > 1.6 && isFinite(x) && isFinite(y)) {
         const grd = ctx.createRadialGradient(x, y, 0, x, y, s.r * 3.5);
         grd.addColorStop(0,   colour);
         grd.addColorStop(0.4, s.sat > 0 ? `hsla(${s.hue},${s.sat}%,80%,${a * 0.4})` : `rgba(200,220,255,${a * 0.3})`);
@@ -7523,13 +7535,17 @@ document.addEventListener('visibilitychange', () => {
     t++;
 
     ctx.clearRect(0, 0, W, H);
+    if (!isFinite(offX)) offX = 0;   /* sanitize NaN from early frames when W=0 */
+    if (!isFinite(offY)) offY = 0;
     if (nebulaOff.width > 0 && nebulaOff.height > 0) ctx.drawImage(nebulaOff, 0, 0);
 
-    /* Lerp parallax */
-    const targetX = (mouseX / W - 0.5) * 36;
-    const targetY = (mouseY / H - 0.5) * 24;
-    offX += (targetX - offX) * 0.04;
-    offY += (targetY - offY) * 0.04;
+    /* Lerp parallax — guard W/H to avoid NaN when canvas not yet sized */
+    if (W > 0 && H > 0) {
+      const targetX = (mouseX / W - 0.5) * 36;
+      const targetY = (mouseY / H - 0.5) * 24;
+      offX += (targetX - offX) * 0.04;
+      offY += (targetY - offY) * 0.04;
+    }
 
     /* Stars */
     for (let i = 0; i < stars.length; i++) {
@@ -7541,7 +7557,7 @@ document.addEventListener('visibilitychange', () => {
       const twinkle = 0.5 + 0.5 * Math.sin(t * 0.016 * s.twinkleSpd + s.twinkleOff);
       const a = s.alpha * (0.55 + 0.45 * twinkle);
       const colour = s.sat > 0 ? `hsla(${s.hue},${s.sat}%,90%,${a})` : `rgba(255,255,255,${a})`;
-      if (s.r > 1.6) {
+      if (s.r > 1.6 && isFinite(x) && isFinite(y)) {
         const grd = ctx.createRadialGradient(x, y, 0, x, y, s.r * 3.5);
         grd.addColorStop(0,   colour);
         grd.addColorStop(0.4, `rgba(180,210,255,${a * 0.25})`);
@@ -8044,8 +8060,10 @@ document.addEventListener('visibilitychange', () => {
     }
 
     modal.classList.add('hiding');
+    /* Fallback for mobile browsers that skip transitionend */
+    const _mfh = setTimeout(() => modal.classList.add('hidden'), 600);
     modal.addEventListener('transitionend', () => {
-      modal.classList.add('hidden');
+      clearTimeout(_mfh); modal.classList.add('hidden');
     }, { once: true });
   };
 
@@ -8102,7 +8120,8 @@ window.playBuzz = function() { if (!_isMuted) _origPlayBuzz(); };
   /* Show after welcome modal fades (give it 1 second) */
   const overlay = document.getElementById('reflectOverlay');
   if (!overlay) return;
-  setTimeout(() => { overlay.style.display = 'flex'; }, 1200);
+  /* Delay past loading screen removal (~1900ms) to avoid z-index race */
+  setTimeout(() => { overlay.style.display = 'flex'; }, 2200);
 })();
 
 window.submitReflect = function() {
@@ -8970,9 +8989,13 @@ window.showHotQuestion = function(scenario) {
     const ls = document.getElementById('loadingScreen');
     if (!ls) return;
     ls.classList.add('fade-out');
-    ls.addEventListener('transitionend', () => ls.remove(), { once: true });
+    /* Fallback: force-remove after 700ms — mobile Safari sometimes skips transitionend */
+    const forceRemove = setTimeout(() => { if (ls.parentNode) ls.remove(); }, 700);
+    ls.addEventListener('transitionend', () => {
+      clearTimeout(forceRemove);
+      if (ls.parentNode) ls.remove();
+    }, { once: true });
   }
-  /* After DOMContentLoaded + 1.2s settle time */
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => setTimeout(hide, 1200));
   } else {
