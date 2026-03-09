@@ -2451,7 +2451,8 @@
     #welcomeModal {
       position: fixed;
       inset: 0;
-      z-index: 9999;              /* above every other element */
+      z-index: 10000;             /* above ALL overlays including reflectOverlay(1500) */
+      pointer-events: auto;       /* explicit — must receive touch events */
       display: flex;
       align-items: center;
       justify-content: center;
@@ -2479,6 +2480,13 @@
     #welcomeModal > .wm-card {
       -webkit-tap-highlight-color: transparent;
       touch-action: pan-y;
+      pointer-events: auto !important;  /* explicit — override any inherited none */
+    }
+    #welcomeModal > .wm-card > .wm-card-inner {
+      pointer-events: auto !important;
+    }
+    #welcomeModal > .wm-card > .wm-card-inner * {
+      pointer-events: auto;  /* all children are interactive */
     }
 
     /* The glass card itself */
@@ -2486,8 +2494,7 @@
       position: relative;
       width: 100%;
       max-width: 520px;
-      max-height: min(90dvh, 90vh);   /* dvh fallback for older iOS */
-      /* FIX: overflow:clip blocks touch events on iOS Safari — use hidden instead */
+      max-height: min(90dvh, 90vh);
       overflow: hidden;
       background: rgba(255, 255, 255, 0.06);
       border: 1px solid rgba(255, 255, 255, 0.18);
@@ -2498,17 +2505,20 @@
         0 30px 80px rgba(0,0,0,.55),
         0 0 120px rgba(106,61,232,.18);
       text-align: center;
-      animation: wmSlideIn 0.55s cubic-bezier(0.34, 1.26, 0.64, 1) both;
+      /* Animation moved to wm-card-inner to reduce stacking contexts */
     }
     /* Inner scroll container — carries the actual padding so content
        never punches through the outer border-radius */
     .wm-card-inner {
       padding: 2.2rem 2rem 2rem;
       overflow-y: auto;
-      max-height: min(90dvh, 90vh);   /* dvh fallback for older iOS */
-      -webkit-overflow-scrolling: touch;  /* required for iOS scroll + touch */
+      max-height: min(90dvh, 90vh);
+      -webkit-overflow-scrolling: touch;
       overscroll-behavior: contain;
-      /* scrollbar-gutter not supported on iOS — removed */
+      position: relative;           /* own stacking context */
+      isolation: isolate;           /* prevent parent stacking context bleed */
+      touch-action: pan-y;          /* allow vertical scroll, pass other touches */
+      animation: wmSlideIn 0.55s cubic-bezier(0.34, 1.26, 0.64, 1) both;
     }
     .wm-card-inner::-webkit-scrollbar        { width: 4px; }
     .wm-card-inner::-webkit-scrollbar-track  { background: transparent; border-radius: 28px; margin: 14px 0; }
@@ -2714,6 +2724,7 @@
       border-radius: 99px;
       padding: .9rem 2.4rem;
       cursor: pointer;
+      touch-action: manipulation;   /* fire click immediately on mobile */
       width: 100%;
       letter-spacing: .04em;
       position: relative;
@@ -2767,6 +2778,10 @@
     }
     .reflect-overlay[style*="display: none"],
     .reflect-overlay[style*="display:none"] { pointer-events:none !important; }
+    /* Extra safety: reflect-overlay must never block touches when not active */
+    .reflect-overlay { pointer-events:none; }
+    .reflect-overlay[style*="display: flex"],
+    .reflect-overlay[style*="display:flex"]  { pointer-events:auto; }
     @keyframes fadeInBg{from{opacity:0}to{opacity:1}}
     .reflect-card {
       background:linear-gradient(145deg,rgba(28,14,58,.97),rgba(10,18,48,.98));
@@ -3706,13 +3721,14 @@
       margin-bottom:.38rem; display:block;
     }
     .wm-name-input {
-      width:100%; font-family:var(--font); font-size:16px; /* >= 16px prevents iOS auto-zoom */
+      width:100%; font-family:var(--font); font-size:16px;
       font-weight:700; padding:.62rem 1rem .62rem 2.4rem;
       background:rgba(255,255,255,.08); border:1.5px solid rgba(255,255,255,.18);
       border-radius:14px; color:#fff; outline:none;
       transition:border-color .2s,background .2s; box-sizing:border-box;
-          -webkit-user-select:text; user-select:text;
+      -webkit-user-select:text; user-select:text;
       -webkit-tap-highlight-color:rgba(160,100,255,.2);
+      touch-action: manipulation;   /* prevent double-tap zoom, pass tap immediately */
     }
     .wm-name-input::placeholder { color:rgba(255,255,255,.28); font-weight:400; }
     .wm-name-input:focus { border-color:rgba(160,100,255,.7); background:rgba(160,100,255,.1); }
@@ -3944,6 +3960,7 @@
         type="text" maxlength="20" autocomplete="off" spellcheck="false"
         placeholder="พิมพ์ชื่อของคุณ…"
         oninput="onWmNameInput(this.value)"
+        ontouchstart="this.focus()"
         aria-label="ชื่อผู้เล่น">
       <div class="wm-name-greeting" id="wmNameGreeting"></div>
     </div>
@@ -8060,14 +8077,19 @@ document.addEventListener('visibilitychange', () => {
     if (reducedMotion) {
       modal.classList.add('hidden');
       window.scrollTo({ top: 0, behavior: 'instant' });
+      if (window._showReflectIfNeeded) window._showReflectIfNeeded();
       return;
     }
 
     modal.classList.add('hiding');
-    /* Fallback for mobile browsers that skip transitionend */
-    const _mfh = setTimeout(() => modal.classList.add('hidden'), 600);
+    /* After modal is gone → show reflect overlay if needed */
+    function _afterHide() {
+      modal.classList.add('hidden');
+      if (window._showReflectIfNeeded) window._showReflectIfNeeded();
+    }
+    const _mfh = setTimeout(_afterHide, 600);
     modal.addEventListener('transitionend', () => {
-      clearTimeout(_mfh); modal.classList.add('hidden');
+      clearTimeout(_mfh); _afterHide();
     }, { once: true });
   };
 
@@ -8119,13 +8141,17 @@ window.playBuzz = function() { if (!_isMuted) _origPlayBuzz(); };
 
 /* ── 2. PRE/POST REFLECTION ──────────────────────────────────────── */
 (function initReflection() {
-  const done = localStorage.getItem('ph_reflect_done');
-  if (done) return; /* only show once ever */
-  /* Show after welcome modal fades (give it 1 second) */
-  const overlay = document.getElementById('reflectOverlay');
-  if (!overlay) return;
-  /* Delay past loading screen removal (~1900ms) to avoid z-index race */
-  setTimeout(() => { overlay.style.display = 'flex'; }, 2200);
+  /* reflectOverlay is now shown ONLY after dismissWelcome() completes,
+     not on a timer — this prevents DOM-order stacking context conflict
+     where reflectOverlay (later in DOM) paints over welcomeModal */
+  window._showReflectIfNeeded = function() {
+    const done = localStorage.getItem('ph_reflect_done');
+    if (done) return;
+    const overlay = document.getElementById('reflectOverlay');
+    if (!overlay) return;
+    /* Small delay so welcomeModal finishes its hide animation first */
+    setTimeout(() => { overlay.style.display = 'flex'; }, 400);
+  };
 })();
 
 window.submitReflect = function() {
