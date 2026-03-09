@@ -2475,26 +2475,29 @@
     #welcomeModal.hidden {
       display: none !important;
     }
+    /* Ensure modal container passes touch events to children on iOS */
+    #welcomeModal > .wm-card {
+      -webkit-tap-highlight-color: transparent;
+      touch-action: pan-y;
+    }
 
     /* The glass card itself */
     .wm-card {
       position: relative;
       width: 100%;
       max-width: 520px;
-      max-height: 90dvh;
-      /* v17: overflow:clip clips visually but doesn't create scroll context
-         so .wm-card-inner can scroll independently without being blocked */
-      overflow: clip;
+      max-height: min(90dvh, 90vh);   /* dvh fallback for older iOS */
+      /* FIX: overflow:clip blocks touch events on iOS Safari — use hidden instead */
+      overflow: hidden;
       background: rgba(255, 255, 255, 0.06);
       border: 1px solid rgba(255, 255, 255, 0.18);
       border-radius: 28px;
-      padding: 0; /* padding moved to inner scroller below */
+      padding: 0;
       box-shadow:
         0 0 0 1px rgba(255,255,255,.06) inset,
         0 30px 80px rgba(0,0,0,.55),
         0 0 120px rgba(106,61,232,.18);
       text-align: center;
-      /* Soft entry animation */
       animation: wmSlideIn 0.55s cubic-bezier(0.34, 1.26, 0.64, 1) both;
     }
     /* Inner scroll container — carries the actual padding so content
@@ -2502,9 +2505,10 @@
     .wm-card-inner {
       padding: 2.2rem 2rem 2rem;
       overflow-y: auto;
-      max-height: 90dvh;
-      /* Custom scrollbar stays neatly inside the rounded card */
-      scrollbar-gutter: stable both-edges;
+      max-height: min(90dvh, 90vh);   /* dvh fallback for older iOS */
+      -webkit-overflow-scrolling: touch;  /* required for iOS scroll + touch */
+      overscroll-behavior: contain;
+      /* scrollbar-gutter not supported on iOS — removed */
     }
     .wm-card-inner::-webkit-scrollbar        { width: 4px; }
     .wm-card-inner::-webkit-scrollbar-track  { background: transparent; border-radius: 28px; margin: 14px 0; }
@@ -2782,7 +2786,7 @@
     }
     .reflect-textarea {
       width:100%; min-height:88px; resize:vertical;
-      font-family:var(--font); font-size:.86rem; line-height:1.65;
+      font-family:var(--font); font-size: 16px; line-height:1.65;
       padding:.7rem 1rem; background:rgba(255,255,255,.07);
       border:1.5px solid rgba(255,255,255,.15); border-radius:14px;
       color:#fff; outline:none; transition:border-color .2s,background .2s; margin-bottom:1rem;
@@ -3702,7 +3706,7 @@
       margin-bottom:.38rem; display:block;
     }
     .wm-name-input {
-      width:100%; font-family:var(--font); font-size:1rem;
+      width:100%; font-family:var(--font); font-size:16px; /* >= 16px prevents iOS auto-zoom */
       font-weight:700; padding:.62rem 1rem .62rem 2.4rem;
       background:rgba(255,255,255,.08); border:1.5px solid rgba(255,255,255,.18);
       border-radius:14px; color:#fff; outline:none;
@@ -3825,7 +3829,7 @@
         padding-bottom: 5rem;
       }
       /* Modal max-height tighter in landscape */
-      .wm-card, .wm-card-inner { max-height: 88dvh; }
+      .wm-card, .wm-card-inner { max-height: min(88dvh, 88vh); }
       /* Player badge compact */
       .player-badge { max-width: 160px; }
     }
