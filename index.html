@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>pH Cosmos v26b: จักรวาลกรด-เบส | Bloom Scaffolded Journey</title>
+  <title>pH Cosmos v26c: จักรวาลกรด-เบส | Bloom Scaffolded Journey</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;600;700;900&display=swap" rel="stylesheet" />
@@ -1522,22 +1522,34 @@
     .mission-fab {
       position: fixed;
       right: 1rem;
-      top: 50%;
-      transform: translateY(-50%);
+      /* v26c: แทน transform:translateY(-50%) ด้วย top+translate ใน JS-free way
+         ใช้ top:50% กับ margin-top แทน เพื่อไม่ให้ transform รบกวน hit-test */
+      top: calc(50% - 23px);
       z-index: 1100;
       width: 46px; height: 46px;
       border-radius: 14px;
+      /* v26c: ย้าย backdrop-filter ไป ::before เพื่อแก้ Chrome Android touch bug */
       background: rgba(10,12,22,.78);
-      backdrop-filter: blur(16px);
-      -webkit-backdrop-filter: blur(16px);
       border: 1px solid rgba(255,255,255,.18);
       display: flex; flex-direction: column;
       align-items: center; justify-content: center;
       gap: 2px;
       cursor: pointer;
       box-shadow: 0 4px 20px rgba(0,0,0,.35);
-      transition: transform .2s cubic-bezier(.34,1.56,.64,1), box-shadow .2s, background .2s;
+      /* ลบ transform ออกจาก transition — ใช้แค่ box-shadow และ background */
+      transition: box-shadow .2s, background .2s;
       -webkit-tap-highlight-color: transparent;
+      overflow: hidden;
+    }
+    /* Blur via ::before — ไม่สร้าง stacking context บน parent */
+    .mission-fab::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: 14px;
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      z-index: -1;
     }
     .mission-fab:hover {
       box-shadow: 0 4px 20px rgba(0,0,0,.4);
@@ -1570,14 +1582,14 @@
     /* Slide-in panel from right */
     .mission-panel {
       position: fixed;
-      top: 30px;   /* clears the fixed .cb-toggle-bar */
+      top: 30px;
       right: 0;
       height: calc(100dvh - 30px);
       width: min(320px, 92vw);
       z-index: 1090;
-      background: rgba(8, 10, 20, 0.88);
-      backdrop-filter: blur(28px) saturate(1.5);
-      -webkit-backdrop-filter: blur(28px) saturate(1.5);
+      /* v26c: solid bg แทน translucent เพื่อลด compositing complexity */
+      background: rgba(8, 10, 20, 0.96);
+      /* backdrop-filter ไว้ใน ::before แทน */
       border-left: 1px solid rgba(255,255,255,.12);
       border-top: 1px solid rgba(255,255,255,.08);
       border-top-left-radius: 12px;
@@ -1587,6 +1599,17 @@
       transform: translateX(105%);
       transition: transform .38s cubic-bezier(.4,0,.2,1);
       overflow-y: auto;
+    }
+    .mission-panel::before {
+      content: '';
+      position: fixed;
+      top: 30px; right: 0;
+      height: calc(100dvh - 30px);
+      width: min(320px, 92vw);
+      backdrop-filter: blur(28px) saturate(1.5);
+      -webkit-backdrop-filter: blur(28px) saturate(1.5);
+      z-index: -1;
+      pointer-events: none;
     }
     .mission-panel.open {
       transform: translateX(0);
@@ -1872,7 +1895,11 @@
       .badge-mission-count { font-size: .48rem; }
 
       /* Mission FAB — tuck closer to edge */
-      .mission-fab { right: .6rem; bottom: 6rem; }
+      .mission-fab {
+        right: .6rem;
+        bottom: 6rem;
+        top: auto; /* override desktop top:calc(50%-23px) */
+      }
 
       /* Dock — full width pill on tiny screens */
       .dock {
@@ -4172,7 +4199,7 @@
 <div class="levelup-flash" id="levelupFlash"></div>
 
 <!-- ═══════════ MISSION FAB (floating right-side) ═══════════ -->
-<button class="mission-fab" id="missionFab" onclick="toggleMissionPanel()" aria-label="เปิดกระดานภารกิจ">
+<button class="mission-fab" id="missionFab" aria-label="เปิดกระดานภารกิจ">
   <div class="mission-fab-dot" id="missionFabDot"></div>
   <span class="mission-fab-icon">📜</span>
   <span class="mission-fab-count" id="missionFabCount">0/5</span>
@@ -6777,6 +6804,23 @@ function toggleMissionPanel() {
   document.getElementById('missionScrim').classList.toggle('show',  missionPanelOpen);
   if (missionPanelOpen) renderMissionPanel();
 }
+
+/* v26c: ใช้ touchend + click listener บน mission-fab
+   เพื่อให้ tap ได้แน่นอนบน Chrome Android */
+(function wireMissionFab() {
+  const fab = document.getElementById('missionFab');
+  if (!fab) return;
+  let touched = false;
+  fab.addEventListener('touchend', function(e) {
+    e.preventDefault(); /* ป้องกัน ghost click */
+    touched = true;
+    toggleMissionPanel();
+    setTimeout(function() { touched = false; }, 600);
+  }, { passive: false });
+  fab.addEventListener('click', function() {
+    if (!touched) toggleMissionPanel(); /* desktop fallback */
+  });
+})();
 
 /* ─────────────────────────────────────────────────────────────────
    MISSION TRACKING HOOKS
