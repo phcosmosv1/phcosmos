@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>pH Cosmos v24: จักรวาลกรด-เบส | Bloom Scaffolded Journey</title>
+  <title>pH Cosmos v25: จักรวาลกรด-เบส | Bloom Scaffolded Journey</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;600;700;900&display=swap" rel="stylesheet" />
@@ -2561,6 +2561,29 @@
       margin-bottom: 1.6rem;
     }
 
+    /* Player Name Input */
+    .wm-name-wrap { margin:.9rem 0 .6rem; position:relative; }
+    .wm-name-label {
+      display:block; font-size:.6rem; font-weight:700;
+      letter-spacing:.08em; text-transform:uppercase;
+      color:rgba(255,255,255,.45); margin-bottom:.38rem; text-align:left;
+    }
+    .wm-name-input {
+      width:100%; box-sizing:border-box;
+      background:rgba(255,255,255,.07); border:1px solid rgba(255,255,255,.18);
+      border-radius:12px; padding:.6rem 1rem .6rem 2.4rem;
+      font-family:var(--font); font-size:.88rem; font-weight:500;
+      color:#fff; outline:none;
+    }
+    .wm-name-input::placeholder { color:rgba(255,255,255,.28); font-weight:400; }
+    .wm-name-input:focus { border-color:rgba(160,100,255,.7); background:rgba(160,100,255,.1); }
+    .wm-name-icon { position:absolute; left:.75rem; bottom:.62rem; font-size:1.05rem; pointer-events:none; }
+    .wm-name-greeting {
+      font-size:.7rem; color:rgba(180,150,255,.85);
+      margin-top:.35rem; min-height:1.1em;
+      opacity:0; transition:opacity .3s;
+    }
+
     /* Divider */
     .wm-divider {
       height: 1px;
@@ -3830,10 +3853,12 @@
        หน้าจอ < 600px: แสดงเฉพาะสิ่งจำเป็น → ปุ่มเห็นชัดทุกกรณี
     ═══════════════════════════════════════════════════════ */
     /* ════════════════════════════════════════════════════
-       v24: MOBILE COMPACT — แสดงครบเหมือน PC แต่ spacing แน่นขึ้น
-       ไม่ซ่อน element ใดเลย — scroll ได้ถ้าต้องการ
+       v25: Mobile ข้าม modal ทั้งหมด — CSS นี้เป็น fallback เท่านั้น
+       (ในกรณีที่ matchMedia ผิดพลาด)
     ════════════════════════════════════════════════════ */
     @media (max-width: 480px) {
+      /* ซ่อน name input บน mobile */
+      #wmNameWrap { display: none !important; }
       /* Card */
       .wm-card { max-height: 92dvh !important; }
       .wm-card-inner {
@@ -4014,12 +4039,19 @@
     <h1 class="wm-title">ยินดีต้อนรับสู่<br>pH Cosmos</h1>
     <p  class="wm-subtitle">จักรวาลกรด-เบส</p>
 
-    <div class="wm-divider"></div>
+    <!-- Player Name Input — PC only (hidden on mobile) -->
+    <div class="wm-name-wrap" id="wmNameWrap">
+      <label class="wm-name-label" for="wmNameInput">✨ ชื่อของคุณ</label>
+      <span class="wm-name-icon">🧑‍🔬</span>
+      <input class="wm-name-input" id="wmNameInput"
+        type="text" maxlength="20" autocomplete="off" spellcheck="false"
+        placeholder="พิมพ์ชื่อของคุณ…"
+        oninput="onWmNameInput(this.value)"
+        aria-label="ชื่อผู้เล่น">
+      <div class="wm-name-greeting" id="wmNameGreeting"></div>
+    </div>
 
-    <!-- v21: Mobile hint — shows only on small screens -->
-    <p class="wm-mobile-hint" id="wmMobileHint">
-      🗺️ เส้นทาง 5 ขั้น · 🎯 ภารกิจรอคุณอยู่ในแอป
-    </p>
+    <div class="wm-divider"></div>
 
     <!-- Player status — populated by JS -->
     <div class="wm-player-section" id="wmPlayerSection">
@@ -8154,6 +8186,23 @@ document.addEventListener('visibilitychange', () => {
   }
 
   /* ── Boot ───────────────────────────────────────────────────── */
+  /* v25: Mobile → ข้าม modal ทั้งหมด เข้าแอปตรงๆ */
+  const isTouchDevice = window.matchMedia('(hover: none) and (pointer: coarse)').matches;
+  if (isTouchDevice) {
+    /* dismiss ทันทีก่อน user เห็น — ไม่มี animation, ไม่มี tap problem */
+    if (modal) {
+      modal.classList.add('hidden');
+    }
+    /* reveal #home ตรงๆ */
+    const homeElMobile = document.getElementById('home');
+    if (homeElMobile) {
+      homeElMobile.classList.remove('pre-reveal');
+    }
+    injectPlayerNameIntoUI();
+    return; /* ออกจาก IIFE */
+  }
+
+  /* Desktop: แสดง modal ตามปกติ */
   populatePlayerTitle();
   populateMissions();
 
@@ -9089,9 +9138,31 @@ function setPlayerName(name) {
 
 
 
-/* v20: name input removed — dismissWelcome calls original directly */
+/* v25: name input restored for PC */
+window.onWmNameInput = function(val) {
+  const greeting = document.getElementById('wmNameGreeting');
+  const trimmed = val.trim();
+  if (greeting) {
+    greeting.textContent = trimmed.length > 0
+      ? 'สวัสดี ' + trimmed + '! ยินดีต้อนรับสู่จักรวาล pH 🚀'
+      : '';
+    greeting.style.opacity = trimmed.length > 0 ? '1' : '0';
+  }
+};
+
+(function initNameInput() {
+  const saved = getPlayerName();
+  const inp = document.getElementById('wmNameInput');
+  if (inp && saved) {
+    inp.value = saved;
+    window.onWmNameInput(saved);
+  }
+})();
+
 const _origDismissWelcome = window.dismissWelcome;
 window.dismissWelcome = function() {
+  const inp = document.getElementById('wmNameInput');
+  if (inp) setPlayerName(inp.value);
   injectPlayerNameIntoUI();
   if (_origDismissWelcome) _origDismissWelcome();
 };
