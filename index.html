@@ -3820,6 +3820,90 @@
       .wm-cta-footer { padding: .9rem 1.2rem 1.3rem; }
     }
 
+    /* ═══════════════════════════════════════════════════════
+       v21 — MOBILE-FIRST WELCOME MODAL
+       หน้าจอ < 600px: แสดงเฉพาะสิ่งจำเป็น → ปุ่มเห็นชัดทุกกรณี
+    ═══════════════════════════════════════════════════════ */
+    @media (max-height: 680px), (max-width: 480px) {
+
+      /* ── ซ่อน elements ที่ไม่จำเป็นบน mobile ── */
+      /* Journey map: user เห็น roadmap bar ข้างล่างอยู่แล้ว */
+      #wmJourney { display: none !important; }
+      /* Mission list: ดูได้ใน mission panel หลังเข้าแอป */
+      .wm-missions-header { display: none !important; }
+      #wmMissionList { display: none !important; }
+      /* Subtitle ซ้ำซ้อนกับ title */
+      .wm-subtitle { display: none !important; }
+
+      /* ── ย่อ elements ที่เหลือ ── */
+      .wm-card-inner {
+        padding: 1.4rem 1.2rem .8rem !important;
+      }
+      .wm-orb {
+        width: 52px !important;
+        height: 52px !important;
+        margin-bottom: .55rem !important;
+      }
+      .wm-orb svg { width: 52px !important; height: 52px !important; }
+      .wm-title {
+        font-size: 1.3rem !important;
+        margin-bottom: .2rem !important;
+      }
+      .wm-divider {
+        margin: 0 0 .8rem !important;
+      }
+      .wm-player-section {
+        padding: .65rem .9rem !important;
+        margin-bottom: .8rem !important;
+      }
+      .wm-avatar { font-size: 1.6rem !important; }
+      .wm-player-title { font-size: .88rem !important; }
+
+      /* ── CTA footer ใหญ่ขึ้น กดง่ายขึ้น ── */
+      .wm-cta-footer {
+        padding: .85rem 1.2rem 1rem !important;
+      }
+      .wm-start-btn {
+        font-size: 1rem !important;
+        padding: 1rem 2rem !important;
+        /* เพิ่ม min tap target 44px ตาม Apple HIG */
+        min-height: 52px !important;
+      }
+
+      /* ── modal card ไม่ต้อง scroll บน mobile ── */
+      .wm-card {
+        max-height: 95dvh !important;
+      }
+      .wm-card-inner {
+        overflow-y: visible !important;
+        flex: 0 0 auto !important;
+      }
+    }
+
+    /* Extra small (iPhone SE, Android compact < 390px) */
+    @media (max-width: 390px) and (max-height: 680px) {
+      .wm-title { font-size: 1.15rem !important; }
+      .wm-orb { width: 44px !important; height: 44px !important; }
+      .wm-orb svg { width: 44px !important; height: 44px !important; }
+      .wm-player-section { padding: .55rem .8rem !important; }
+    }
+
+    /* v21: mobile hint — hidden on desktop, shown on mobile instead of full journey/missions */
+    .wm-mobile-hint {
+      display: none; /* hidden by default (desktop) */
+    }
+    @media (max-height: 680px), (max-width: 480px) {
+      .wm-mobile-hint {
+        display: block;
+        font-size: .72rem;
+        color: rgba(255,255,255,.42);
+        text-align: center;
+        margin-bottom: .75rem;
+        letter-spacing: .04em;
+        line-height: 1.6;
+      }
+    }
+
   </style>
 </head>
 <body>
@@ -3923,6 +4007,11 @@
     <p  class="wm-subtitle">จักรวาลกรด-เบส</p>
 
     <div class="wm-divider"></div>
+
+    <!-- v21: Mobile hint — shows only on small screens -->
+    <p class="wm-mobile-hint" id="wmMobileHint">
+      🗺️ เส้นทาง 5 ขั้น · 🎯 ภารกิจรอคุณอยู่ในแอป
+    </p>
 
     <!-- Player status — populated by JS -->
     <div class="wm-player-section" id="wmPlayerSection">
