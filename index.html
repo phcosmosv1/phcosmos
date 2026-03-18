@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>pH Cosmos v26d: จักรวาลกรด-เบส | Bloom Scaffolded Journey</title>
+  <title>pH Cosmos v26e: จักรวาลกรด-เบส | Bloom Scaffolded Journey</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;600;700;900&display=swap" rel="stylesheet" />
@@ -1655,7 +1655,7 @@
       margin-top: .1rem;
     }
     .mp-close {
-      width: 32px; height: 32px;
+      width: 44px; height: 44px; /* v26e: ขยายเป็น 44px — Apple HIG minimum */
       border-radius: 50%;
       background: rgba(255,255,255,.07);
       border: 1px solid rgba(255,255,255,.12);
@@ -1665,6 +1665,7 @@
       display: flex; align-items: center; justify-content: center;
       transition: background .2s, color .2s;
       flex-shrink: 0;
+      -webkit-tap-highlight-color: transparent;
     }
     .mp-close:hover { background: rgba(255,255,255,.14); color: #fff; }
 
@@ -4218,7 +4219,7 @@
         <div class="mp-header-sub">Mission Board</div>
       </div>
     </div>
-    <button class="mp-close" onclick="toggleMissionPanel()" aria-label="ปิด">✕</button>
+    <button class="mp-close" id="mpCloseBtn" aria-label="ปิด">✕</button>
   </div>
   <div class="mp-summary">
     <div class="mp-progress-ring-wrap">
@@ -6812,13 +6813,29 @@ function toggleMissionPanel() {
   if (!fab) return;
   let touched = false;
   fab.addEventListener('touchend', function(e) {
-    e.preventDefault(); /* ป้องกัน ghost click */
+    e.preventDefault();
     touched = true;
     toggleMissionPanel();
     setTimeout(function() { touched = false; }, 600);
   }, { passive: false });
   fab.addEventListener('click', function() {
-    if (!touched) toggleMissionPanel(); /* desktop fallback */
+    if (!touched) toggleMissionPanel();
+  });
+})();
+
+/* v26e: touchend + click บน mp-close (ปุ่มกากบาทปิด panel) */
+(function wireMpClose() {
+  const btn = document.getElementById('mpCloseBtn');
+  if (!btn) return;
+  let touched = false;
+  btn.addEventListener('touchend', function(e) {
+    e.preventDefault();
+    touched = true;
+    toggleMissionPanel();
+    setTimeout(function() { touched = false; }, 600);
+  }, { passive: false });
+  btn.addEventListener('click', function() {
+    if (!touched) toggleMissionPanel();
   });
 })();
 
