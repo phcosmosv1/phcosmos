@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>pH Cosmos v26: จักรวาลกรด-เบส | Bloom Scaffolded Journey</title>
+  <title>pH Cosmos v26b: จักรวาลกรด-เบส | Bloom Scaffolded Journey</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;600;700;900&display=swap" rel="stylesheet" />
@@ -8252,7 +8252,20 @@ window.playBuzz = function() { if (!_isMuted) _origPlayBuzz(); };
 (function initReflection() {
   const done = localStorage.getItem('ph_reflect_done');
   if (done) return; /* only show once ever */
-  /* Show after welcome modal fades (give it 1 second) */
+
+  /* v26b: ข้าม reflect overlay บน mobile — ใช้ detection เดียวกับ modal */
+  const isMobile = (
+    navigator.maxTouchPoints > 0 ||
+    ('ontouchstart' in window) ||
+    window.innerWidth <= 768
+  );
+  if (isMobile) {
+    /* mark as done ทันที — ไม่แสดงบน mobile */
+    try { localStorage.setItem('ph_reflect_done', '1'); } catch(e) {}
+    return;
+  }
+
+  /* Desktop: แสดงหลัง welcome modal fade (1.2s) */
   const overlay = document.getElementById('reflectOverlay');
   if (!overlay) return;
   setTimeout(() => { overlay.style.display = 'flex'; }, 1200);
