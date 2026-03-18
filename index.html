@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>pH Cosmos v25: จักรวาลกรด-เบส | Bloom Scaffolded Journey</title>
+  <title>pH Cosmos v26: จักรวาลกรด-เบส | Bloom Scaffolded Journey</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;600;700;900&display=swap" rel="stylesheet" />
@@ -8186,23 +8186,38 @@ document.addEventListener('visibilitychange', () => {
   }
 
   /* ── Boot ───────────────────────────────────────────────────── */
-  /* v25: Mobile → ข้าม modal ทั้งหมด เข้าแอปตรงๆ */
-  const isTouchDevice = window.matchMedia('(hover: none) and (pointer: coarse)').matches;
-  if (isTouchDevice) {
-    /* dismiss ทันทีก่อน user เห็น — ไม่มี animation, ไม่มี tap problem */
+  /* v26: ตรวจ touch/mobile ด้วย 3 วิธีพร้อมกัน (robust ที่สุด)
+     matchMedia(hover:none) อาจ fail บน Samsung/hybrid devices
+     ใช้ navigator.maxTouchPoints + ontouchstart + viewport width แทน */
+  const isMobile = (
+    navigator.maxTouchPoints > 0 ||
+    ('ontouchstart' in window) ||
+    window.innerWidth <= 768
+  );
+
+  if (isMobile) {
+    /* ซ่อน modal ทันที */
     if (modal) {
-      modal.classList.add('hidden');
+      modal.style.display = 'none';
     }
-    /* reveal #home ตรงๆ */
+    /* แสดง #home ตรงๆ */
     const homeElMobile = document.getElementById('home');
     if (homeElMobile) {
+      homeElMobile.style.opacity = '1';
+      homeElMobile.style.transform = 'none';
       homeElMobile.classList.remove('pre-reveal');
     }
-    injectPlayerNameIntoUI();
-    return; /* ออกจาก IIFE */
+    /* v26-fix: injectPlayerNameIntoUI อยู่หลัง IIFE นี้ใน DOM
+       ต้องรอให้ script ทั้งหมด parse เสร็จก่อนเรียก */
+    setTimeout(function() {
+      if (typeof injectPlayerNameIntoUI === 'function') {
+        injectPlayerNameIntoUI();
+      }
+    }, 0);
+    return;
   }
 
-  /* Desktop: แสดง modal ตามปกติ */
+  /* Desktop (non-touch, viewport > 768px): แสดง modal เต็มรูปแบบ */
   populatePlayerTitle();
   populateMissions();
 
