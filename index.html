@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>pH Cosmos v22: จักรวาลกรด-เบส | Bloom Scaffolded Journey</title>
+  <title>pH Cosmos v23: จักรวาลกรด-เบส | Bloom Scaffolded Journey</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;600;700;900&display=swap" rel="stylesheet" />
@@ -2451,21 +2451,26 @@
     #welcomeModal {
       position: fixed;
       inset: 0;
-      z-index: 9999;              /* above every other element */
+      z-index: 9999;
       display: flex;
       align-items: center;
       justify-content: center;
-      /* v22: extra bottom padding เผื่อ fixed start button (80-90px) */
-      padding: 1rem .75rem 100px;
-
-      /* Deep space tint + heavy blur so the cosmos canvas shows as a soft glow */
+      padding: 1rem .75rem;
+      /* v23: NO backdrop-filter here — moved to ::before to avoid
+         Chrome Android touch hit-test offset bug */
+      background: transparent;
+      opacity: 1;
+      transition: opacity 0.55s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    /* Blur layer as pseudo-element — visually identical, no stacking context conflict */
+    #welcomeModal::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      z-index: -1;
       background: rgba(4, 6, 18, 0.72);
       backdrop-filter: blur(12px) saturate(1.2);
       -webkit-backdrop-filter: blur(12px) saturate(1.2);
-
-      /* Fade-out transition */
-      opacity: 1;
-      transition: opacity 0.55s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
     /* Hidden state — triggered by JS */
@@ -3809,7 +3814,16 @@
       .player-badge { max-width: 160px; }
     }
 
-    /* wm-cta-footer removed in v22 — button is now a fixed element */
+    /* CTA footer — sticky bottom of card */
+    .wm-cta-footer {
+      padding: 1rem 2rem 1.6rem;
+      background: rgba(255,255,255,.03);
+      border-top: 1px solid rgba(255,255,255,.07);
+      flex-shrink: 0;
+    }
+    @media (max-width: 480px) {
+      .wm-cta-footer { padding: .85rem 1.2rem 1.2rem; }
+    }
 
     /* ═══════════════════════════════════════════════════════
        v21 — MOBILE-FIRST WELCOME MODAL
@@ -3850,13 +3864,22 @@
       .wm-avatar { font-size: 1.6rem !important; }
       .wm-player-title { font-size: .88rem !important; }
 
-      /* ── modal card ไม่ต้อง scroll บน mobile (button แยกออกไปแล้ว) ── */
+      /* ── modal card + footer ── */
       .wm-card {
-        max-height: 80dvh !important; /* เผื่อ fixed button ด้านล่าง */
+        max-height: 92dvh !important;
       }
       .wm-card-inner {
         overflow-y: auto !important;
         flex: 1 1 auto !important;
+        min-height: 0 !important;
+      }
+      .wm-cta-footer {
+        padding: .85rem 1.2rem 1.1rem !important;
+        flex-shrink: 0 !important;
+      }
+      .wm-start-btn {
+        font-size: 1rem !important;
+        min-height: 50px !important;
       }
     }
 
@@ -4049,25 +4072,16 @@
     </div>
 
   </div><!-- /.wm-card-inner -->
-  </div><!-- /.wm-card -->
-</div>
 
-<!-- ═══════════ START BUTTON (fixed, independent of modal) ═══════════ -->
-<!-- v22: ปุ่มแยกจาก modal card ทั้งหมด — ไม่ถูก backdrop-filter, overflow, หรือ clip ใดๆ -->
-<div id="wmStartBtnFixed" style="
-  position: fixed;
-  bottom: 0; left: 0; right: 0;
-  z-index: 10001;
-  padding: 1rem 1.5rem max(1.2rem, env(safe-area-inset-bottom, 1.2rem));
-  background: linear-gradient(to top, rgba(4,6,18,.95) 60%, transparent);
-  display: flex; flex-direction: column; align-items: center;
-  pointer-events: auto;
-">
-  <button class="wm-start-btn" id="wmStartBtn" onclick="dismissWelcome()"
-    style="max-width:420px; width:100%;">
-    🚀 เริ่มการสำรวจ
-  </button>
-  <p class="wm-returning-note" id="wmReturningNote" style="margin-top:.5rem;"></p>
+  <!-- CTA footer — กลับเข้า card แล้วหลังแก้ root cause (v23) -->
+  <div class="wm-cta-footer">
+    <button class="wm-start-btn" id="wmStartBtn" onclick="dismissWelcome()">
+      🚀 เริ่มการสำรวจ
+    </button>
+    <p class="wm-returning-note" id="wmReturningNote"></p>
+  </div>
+
+  </div><!-- /.wm-card -->
 </div>
 
 <!-- ═══════════ COLORBLIND MODE TOGGLE BAR ═══════════ -->
@@ -8086,9 +8100,7 @@ document.addEventListener('visibilitychange', () => {
   /* ── 3. Dismiss handler ─────────────────────────────────────── */
   window.dismissWelcome = function() {
     if (!modal) return;
-    /* v22: ซ่อน fixed start button พร้อม modal */
-    const fixedBtn = document.getElementById('wmStartBtnFixed');
-    if (fixedBtn) fixedBtn.style.display = 'none';
+    /* v23: button is back inside card — no fixed button to hide */
 
     /* ── Audio policy: initialise AudioContext on first user gesture ── */
     try { getAudioCtx(); } catch(e) { /* silent — some browsers block */ }
