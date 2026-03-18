@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>pH Cosmos v19: จักรวาลกรด-เบส | Bloom Scaffolded Journey</title>
+  <title>pH Cosmos : จักรวาลกรด-เบส | Bloom Scaffolded Journey</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;600;700;900&display=swap" rel="stylesheet" />
@@ -2481,9 +2481,8 @@
       position: relative;
       width: 100%;
       max-width: 520px;
-      max-height: 90dvh;
-      /* v19-fix: overflow:hidden keeps border-radius clipping
-         while allowing .wm-card-inner to scroll independently */
+      max-height: 92dvh;
+      /* v20: overflow:hidden — border-radius + inner scroll */
       overflow: hidden;
       background: rgba(255, 255, 255, 0.06);
       border: 1px solid rgba(255, 255, 255, 0.18);
@@ -2503,10 +2502,10 @@
     /* Inner scroll container — carries the actual padding so content
        never punches through the outer border-radius */
     .wm-card-inner {
-      padding: 2.2rem 2rem 1.4rem; /* ลด bottom padding เพราะมี footer แล้ว */
+      padding: 2rem 2rem 1.2rem;
       overflow-y: auto;
-      flex: 1 1 auto; /* ขยายเต็มพื้นที่ที่เหลือ */
-      min-height: 0;  /* ต้องมีเพื่อให้ flex item scroll ได้ */
+      flex: 1 1 auto;
+      min-height: 0;
       /* Custom scrollbar stays neatly inside the rounded card */
       scrollbar-gutter: stable both-edges;
     }
@@ -3696,26 +3695,6 @@
     /* ═══════════════════════════════════════════════════════
        PLAYER NAME INPUT (Welcome Modal)
     ═══════════════════════════════════════════════════════ */
-    .wm-name-wrap { margin:.9rem 0 .6rem; position:relative; }
-    .wm-name-label {
-      font-size:.62rem; font-weight:800; letter-spacing:.1em;
-      color:rgba(255,255,255,.45); text-transform:uppercase;
-      margin-bottom:.38rem; display:block;
-    }
-    .wm-name-input {
-      width:100%; font-family:var(--font); font-size:1rem;
-      font-weight:700; padding:.62rem 1rem .62rem 2.4rem;
-      background:rgba(255,255,255,.08); border:1.5px solid rgba(255,255,255,.18);
-      border-radius:14px; color:#fff; outline:none;
-      transition:border-color .2s,background .2s; box-sizing:border-box;
-    }
-    .wm-name-input::placeholder { color:rgba(255,255,255,.28); font-weight:400; }
-    .wm-name-input:focus { border-color:rgba(160,100,255,.7); background:rgba(160,100,255,.1); }
-    .wm-name-icon { position:absolute; left:.75rem; bottom:.65rem; font-size:1.05rem; pointer-events:none; }
-    .wm-name-greeting {
-      font-size:.68rem; color:rgba(200,160,255,.85); margin-top:.3rem;
-      min-height:1rem; font-weight:600; transition:opacity .3s; opacity:0;
-    }
 
     /* ═══════════════════════════════════════════════════════
        LAB FIRST-TIME TUTORIAL
@@ -3942,18 +3921,6 @@
     <!-- Title block -->
     <h1 class="wm-title">ยินดีต้อนรับสู่<br>pH Cosmos</h1>
     <p  class="wm-subtitle">จักรวาลกรด-เบส</p>
-
-    <!-- Player Name Input -->
-    <div class="wm-name-wrap">
-      <label class="wm-name-label" for="wmNameInput">✨ ชื่อของคุณ</label>
-      <span class="wm-name-icon">🧑‍🔬</span>
-      <input class="wm-name-input" id="wmNameInput"
-        type="text" maxlength="20" autocomplete="off" spellcheck="false"
-        placeholder="พิมพ์ชื่อของคุณ…"
-        oninput="onWmNameInput(this.value)"
-        aria-label="ชื่อผู้เล่น">
-      <div class="wm-name-greeting" id="wmNameGreeting"></div>
-    </div>
 
     <div class="wm-divider"></div>
 
@@ -9020,37 +8987,13 @@ function setPlayerName(name) {
   else localStorage.removeItem(PH_NAME_KEY);
 }
 
-/* Realtime greeting update as user types */
-window.onWmNameInput = function(val) {
-  const greeting = document.getElementById('wmNameGreeting');
-  const btn = document.getElementById('wmStartBtn');
-  const trimmed = val.trim();
-  if (greeting) {
-    if (trimmed.length > 0) {
-      greeting.textContent = 'สวัสดี ' + trimmed + '! ยินดีต้อนรับสู่จักรวาล pH 🚀';
-      greeting.style.opacity = '1';
-    } else {
-      greeting.textContent = '';
-      greeting.style.opacity = '0';
-    }
-  }
-};
+/* name input removed — v20 */
 
-/* Pre-fill name input if returning player */
-(function initNameInput() {
-  const saved = getPlayerName();
-  const inp   = document.getElementById('wmNameInput');
-  if (inp && saved) {
-    inp.value = saved;
-    window.onWmNameInput(saved);
-  }
-})();
 
-/* Patch dismissWelcome to save name first */
+
+/* v20: name input removed — dismissWelcome calls original directly */
 const _origDismissWelcome = window.dismissWelcome;
 window.dismissWelcome = function() {
-  const inp = document.getElementById('wmNameInput');
-  if (inp) setPlayerName(inp.value);
   injectPlayerNameIntoUI();
   if (_origDismissWelcome) _origDismissWelcome();
 };
